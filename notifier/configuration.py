@@ -1,3 +1,9 @@
+"""Configuration builder/reader for the rpi-email-notifier
+
+Contributors: Arjan de Haan (Vepnar)
+Last edited: 28/10/2019 (dd/mm/yyyy)
+
+"""
 import configparser
 import os.path
 import sys
@@ -30,65 +36,76 @@ gpiopin     = 17
 
 
 def enable(path='config.cfg'):
-    # First of we begin by checking if the configuration file exists.
-    if not (os.path.exists(path) and os.path.isfile(path)):
+    """Load the configuration file and check if there is information missing.
 
-        # Looks like it doesn't exist.
-        # So we create new one with the default configuration settings
-        with open(path, 'w') as f:
-            f.write(DEFAULT_CONFIG)
+    Checks if there is a configuration file and create one if it doesn't exist.
+    After that will check if the required items exist in the configuration file.
 
-        # Now we print a message to the user about what they should do
+    Args:
+        path: location where the configuration file should be
+
+    Raises:
+        Closes application when something is wrong
+    """
+
+    if not (os.path.exists(path) and os.path.isfile(path)): # Create config if doesn't exist
+        with open(path, 'w') as config_file:
+            config_file.write(DEFAULT_CONFIG)
+
         print('Config file created please edit this file and restart the application')
         sys.exit(1)
 
-    # Initialize the Configuration parser.
-    # Then we try to read file given configuration file.
     config = configparser.ConfigParser()
-    config.read(path)
+    config.read(path) # Parse configuration file
 
-    # Now we test if the required sections are there
-    # After that we inform the user about the damaged configuration file.
+    # Checks if required sections exist
     if not (config.has_section('SMTP CREDENTIALS') or config.has_section('DEFAULT')):
-        print(
-            f'Your configuration at `{path}` is missing settings. please edit this file and solve the problem`')
+        print(f'Your configuration at {path} is missing settings. '
+              'please edit this file and solve the problem')
         sys.exit(1)
 
-    # Now we check if there are some SMTP values missing
-    # We end the process when there is anything missing
-    if not check_email(config):
-        print(
-            f'There is information missing for the SMTP server. Please add these to your configuration file at "{path}""`')
+    # Check if required E-Mail settings exist
+    if not check_email_requirements(config):
+        print('There is information missing for the SMTP server.'
+              f'Please add these to your configuration file at "{path}""')
         sys.exit(1)
-    
-    # Then we check if there are any enabled actions. because we got nothing to do when there are none enabled
-    # Kill the process when there are no actions enabled
+
+    # Check if there are actions are enabled
     if not check_enabled_actions(config):
         print('There are no enabled actions in the configuration file.')
         sys.exit(1)
 
-def check_email(config):
-    # Here we will check if all items required for the SMTP function are there.
+def check_email_requirements(config):
+    """Checks if all required options for the IMAP protocol exist in the configuration file.
+
+    Args:
+        config: Configuration file
+
+    Returns:
+        True when there is no information missing and false when there is.
+    """
     items = ['email', 'password', 'server', 'port', 'interval']
 
-    # Now we loop trough them and return False when there is something missing,
-    # and of course return True when nothing is missing.
     for item in items:
         if not config.has_option('SMTP CREDENTIALS', item):
             return False
     return True
 
 def check_enabled_actions(config):
-    # Receive all sections from the configuration file.
+    """Check if there is one action enabled in the configuration file.
+
+    Args:
+        config: Configuration file
+
+    Returns:
+        True when there is atleast one action enabled
+    """
     sections = config.sections()
 
-    # Delete the SMTP section from the list of options.
+    # Delete the SMTP section from the sections.
     del sections[0]
-    
-    # Loop through all remaining options to check if there is one enabled.
-    # Return true when there is 1 enabled. return false when there are none enabled.
+
     for section in sections:
-        if config.getboolean(section,'enabled'):
+        if config.getboolean(section, 'enabled'):
             return True
     return False
-
