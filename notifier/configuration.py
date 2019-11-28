@@ -35,7 +35,7 @@ gpiopin     = 17
 '''
 
 
-def enable(path='config.cfg'):
+def get_config(path='./config.cfg'):
     """Load the configuration file and check if there is information missing.
 
     Checks if there is a configuration file and create one if it doesn't exist.
@@ -44,8 +44,7 @@ def enable(path='config.cfg'):
     Args:
         path: location where the configuration file should be
 
-    Raises:
-        Closes application when something is wrong
+    Returns: Configuration file
     """
 
     if not (os.path.exists(path) and os.path.isfile(path)): # Create config if doesn't exist
@@ -71,9 +70,11 @@ def enable(path='config.cfg'):
         sys.exit(1)
 
     # Check if there are actions are enabled
-    if not check_enabled_actions(config):
+    if not get_enabled_actions(config):
         print('There are no enabled actions in the configuration file.')
         sys.exit(1)
+
+    return config
 
 def check_email_requirements(config):
     """Checks if all required options for the IMAP protocol exist in the configuration file.
@@ -91,21 +92,23 @@ def check_email_requirements(config):
             return False
     return True
 
-def check_enabled_actions(config):
+def get_enabled_actions(config):
     """Check if there is one action enabled in the configuration file.
 
     Args:
         config: Configuration file
 
     Returns:
-        True when there is atleast one action enabled
+        All enabled actions
     """
     sections = config.sections()
 
     # Delete the SMTP section from the sections.
     del sections[0]
 
+    enabled_actions = []
     for section in sections:
         if config.getboolean(section, 'enabled'):
-            return True
-    return False
+            section_dict = dict(config[section])
+            enabled_actions.append(section_dict)
+    return enabled_actions
