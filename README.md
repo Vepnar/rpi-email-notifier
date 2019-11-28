@@ -25,7 +25,7 @@ Step 2: Download and install requirements for Python3.7
 cd ~
 git clone https://github.com/Vepnar/rpi-email-notifier.git
 cd rpi-email-notifier
-python3.7 -m pip install -r requirements.txt
+sudo python3.7 -m pip install -r requirements.txt
 ```
 
 Step 3: Configure the application
@@ -41,7 +41,10 @@ Step 3: Starting the application
 ```sh
 sudo python3.7 main.py
 ```
+### Possible bug fixed
 
+On a Raspberry Pi the USB could throw an `USBError: [Errno 110] Operation timed out`
+This could be fixed by editing `/boot/config.txt` and adding `dtoverlay=dwc2,dr_mode=host` at the end
 
 #### This project will be based on the following little projects I made before
 

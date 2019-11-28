@@ -1,5 +1,6 @@
 __pycache__
+.vscode
 
 *.pyc
 *.sqlite
-test.cfg
+config.cfg
