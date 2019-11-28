@@ -9,15 +9,10 @@ import asyncio
 import usb.core
 import usb.util
 
-
 class Luxafor:
-    """ Object to access Luxafor easily 
-    
-        This will make it easy to change the colors and fade effect.
-        It will do it all asynchronous!
-    """
+    """Class to access and use the Luxafor easily with simple commands"""
 
-    def enable(self):
+    def __init__(self):
         """Test requirements for the Luxafor, and exit requirements are not met.
 
         First the operation system is tested.
@@ -40,8 +35,8 @@ class Luxafor:
         self.device.set_configuration()
 
         # Reset the colors
-        self.color_list = []
         self.set_solid_color([0, 0, 0])
+        self.color_list = []
 
     def set_solid_color(self, color, led=255):
         """Send RGB values in binary to the Luxafor, and set it in solid color mode.
@@ -82,7 +77,7 @@ class Luxafor:
             ]
 
         """
-        self.device.write(1, [2, led, color[0], color[1], color[1], duration])
+        self.device.write(1, [2, led, color[0], color[1], color[2], duration])
 
     def add_color(self, red, green, blue):
         '''Add colors to the display list

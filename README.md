@@ -25,7 +25,7 @@ Step 2: Download and install requirements for Python3.7
 cd ~
 git clone https://github.com/Vepnar/rpi-email-notifier.git
 cd rpi-email-notifier
-python3.7 -m pip install -r requirements.txt
+sudo python3.7 -m pip install -r requirements.txt
 ```
 
 Step 3: Configure the application
