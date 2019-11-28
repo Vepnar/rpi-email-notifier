@@ -1,106 +1,149 @@
+"""Module to access the Luxafor
+
+Contributors: Arjan de Haan (Vepnar)
+Last edited: 28/10/2019 (dd/mm/yyyy)
+"""
 from contextlib import suppress
-import usb.core, usb.util, asyncio, sys
+import sys
+import asyncio
+import usb.core
+import usb.util
 
-device = None
-color_list = []
 
-def enable():
-    global device
-    # We first start by testing if the system is running on windows.
-    # Windows is not supported and will probaby break the program
-    if sys.platform == "win32":
-        print('Windows is not supported please run this on Linux')
-        sys.exit(1)
+class Luxafor:
+    """ Object to access Luxafor easily 
+    
+        This will make it easy to change the colors and fade effect.
+        It will do it all asynchronous!
+    """
 
-    # Looks like we are running in Linux
-    # First we look the our Luxafor device
-    device = usb.core.find(idVendor=0x04d8, idProduct=0xf372)
+    def enable(self):
+        """Test requirements for the Luxafor, and exit requirements are not met.
 
-    # Now we check if the Luxafor actually exists
-    # We need the Luxafor for our project so we kill the program when it's not found.
-    if device is None:
-        print('the Luxafor is not found')
-        sys.exit(1)
+        First the operation system is tested.
+        Then that we look for the device by their vendor id & product id.
+        After that we take control of the device and turn it's lights off
+        """
 
-     # Linux kernel sets up a device driver for USB device, which you have to detach.
-    # Otherwise trying to interact with the device gives a 'Resource Busy' error.  
-    with suppress(Exception):
-        device.detach_kernel_driver(0)
-        print('test')
+        if sys.platform == "win32":
+            print('Windows is not supported please run this on Linux')
+            sys.exit(1)
 
-    # Setup default configuration for the Luxafor
-    device.set_configuration()
+        # Look for the Luxafor
+        self.device = usb.core.find(idVendor=0x04d8, idProduct=0xf372)
+        if self.device is None:
+            print('the Luxafor is not found')
+            sys.exit(1)
 
-    # Turn the Luxafor off by resetting it's colour
-    set_solid_color()
+        with suppress(Exception):
+            self.device.detach_kernel_driver(0)
+        self.device.set_configuration()
 
-def set_solid_color(red=0 ,green=0, blue=0,led=255):
-    # 1st: 1 for solid colour
-    # 2nd: 1-6 for specific LED, 65 for front, 66 for back, 0 for all, 255 for all one color
-    # 3rd: for red (0-255)
-    # 4th: for green (0-255)
-    # 5th: for blue (0-255)
-    device.write(1 ,[1,led,red,green,blue])
+        # Reset the colors
+        self.color_list = []
+        self.set_solid_color([0, 0, 0])
 
-def set_fade_color(red , green, blue,led=255,duration=80):
-    # 1st: 2 for a beautiful fade effect
-    # 2nd: 1-6 for specific LED, 65 for front, 66 for back, 0 for all, 255 for all one color
-    # 3rd: for red (0-255)
-    # 4th: for green (0-255)
-    # 5th: for blue (0-255)
-    # 6th: for duration
-    device.write(1 ,[2, led, red, green, blue, duration])
+    def set_solid_color(self, color, led=255):
+        """Send RGB values in binary to the Luxafor, and set it in solid color mode.
 
-def add_color(red,green,blue):
-    # This is where we add colors we want to display
-    # We first create an object where the colors are stored
-    color_object = [red, green, blue]
+        Args:
+            color:
+                red: brightness of the red led (0-255)
+                green: brightness of the green led (0-255)
+                blue: brightness of the blue led (0-255)
+            led: 1-6 for specific LED, 65 for front, 66 for back, 0 for all, 255 for all one color
 
-    # Then we check if this object is found in our list with colours. We don't copies of colours in here so we cancel the appending process
-    if color_list in color_list:
-        return
+        Raw binary values:
+            [
+                Solid color (1),
+                led (1-6, 66, 255),
+                red (0-255),
+                green (0-255),
+                blue (0-255),
+            ]
+        """
+        self.device.write(1, [1, led, color[0], color[1], color[1]])
 
-    # Now we add the color
-    color_list.append(color_object)
+    def set_fade_color(self, color, led=255, duration=80):
+        """Send RGB values for the Luxafor, and set it in fade mode.
 
-def remove_color(red,green,blue):
-    # This is where we delete colors we don't want to see anymore
-    # First we create a color object
-    color_object = [red, green, blue]
+        Args:
+            color & led: see set_solid_color docstring
+            duration: time it will take to fade into the given color
 
-    # Only try to delete it when it is actually in the list
-    if color_object in color_list:
-        color_list.remove(color_object)
+        Raw binary values:
+            [
+                Solid color (1),
+                led (1-6, 66, 255),
+                red (0-255),
+                green (0-255),
+                blue (0-255),
+                duraction (0-255),
+            ]
 
-async def loop():
-    # Here we loop through all the colors and display them one by one
-    # Create a variable for the index and one to make the Luxafor dark again
-    index = 0
-    reset_color = False
+        """
+        self.device.write(1, [2, led, color[0], color[1], color[1], duration])
 
-    # Create an infinite loop and a timeout so it won't update too fast
-    while True:
-        await asyncio.sleep(2.5)
+    def add_color(self, red, green, blue):
+        '''Add colors to the display list
 
-        # First check if the index isn't too high of a number
-        if index >= len(color_list):
-            index = 0
+        This will add colors to the list we will loop through.
+        Each variable should be a number between 0 and 255.
+        0 is off and 255 is the brighest color it can be.
 
-        # Make the Luxafor dark when there are no colors to display
-        if not color_list:
-            set_fade_color(0,0,0)
-            continue
+        Args:
+            red: number for the color red between 0-255
+            green: number for the color green between 0-255
+            blue number for the color blue between 0-255
 
-        if reset_color:
-            # Reset the color when the reset option is enabled
-            # After that we disable the reset option and add +1 to our index
-            set_fade_color(0,0,0)
-            turn_off = False
-            index+=1
+        Typical usage example:
+            add_color(255, 0, 0) # to make everything red
+            add_color(0, 255, 0) # Green
+            add_color(0, 0, 255) # Blue
+            add_color(255, 255, 255) # White
+            add_color(255, 0, 255) # Magenta
+        '''
+        color_object = [red, green, blue]
 
-        else:
-            # Enable reset to create a good looking fade for the Luxafor
-            # Also set the color based in the index
-            reset_color = True
-            set_fade_color(*color_list[index])
+        if color_object in self.color_list:
+            return
+        self.color_list.append(color_object)
 
+    def remove_color(self, red, green, blue):
+        """This will remove the color from the display list.
+
+        See add_color for the description for this one.
+        """
+        color_object = [red, green, blue]
+        # Only try to delete it when it is actually in the list
+        if color_object in self.color_list:
+            self.color_list.remove(color_object)
+
+    async def loop(self):
+        """Asynchronous loop between colours.
+
+        This will fade between the colors added to the color_list.
+        It will turn the Luxafor off when there are no colors found in the list
+        Between each update it will wait 2.5 seconds
+        """
+        index = 0
+        reset_color = False
+
+        while True:
+            await asyncio.sleep(2.5)
+
+            if index >= len(self.color_list):
+                index = 0
+
+            if not self.color_list:
+                self.set_fade_color([0, 0, 0])
+                continue
+
+            if reset_color:
+                self.set_fade_color([0, 0, 0])
+                reset_color = False
+                index += 1
+
+            else:
+                reset_color = True
+                self.set_fade_color(self.color_list[index])
