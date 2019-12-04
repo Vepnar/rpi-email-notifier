@@ -1,7 +1,7 @@
 """Module to access the E-Mail box & check for new E-Mails.
 
 Contributors: Arjan de Haan (Vepnar)
-Last edited: 3/12/2019 (dd/mm/yyyy)
+Last edited: 4/12/2019 (dd/mm/yyyy)
 """
 
 import imaplib
@@ -59,7 +59,6 @@ class EmailBox:
         if mail_ids[0]:
             for num in mail_ids[0].split():
                 self.mail_box.store(num, '+FLAGS', r'(\Deleted)')
-                print(num)
             self.mail_box.expunge()
             return True
         return False
