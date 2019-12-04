@@ -1,7 +1,7 @@
 """Configuration builder/reader for the rpi-email-notifier
 
 Contributors: Arjan de Haan (Vepnar)
-Last edited: 28/10/2019 (dd/mm/yyyy)
+Last edited: 4/12/2019 (dd/mm/yyyy)
 
 """
 import configparser
@@ -110,5 +110,6 @@ def get_enabled_actions(config):
     for section in sections:
         if config.getboolean(section, 'enabled'):
             section_dict = dict(config[section])
+            section_dict.update({ 'name' : section })
             enabled_actions.append(section_dict)
     return enabled_actions
