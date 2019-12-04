@@ -1,7 +1,7 @@
 """Module to access the E-Mail box & check for new E-Mails.
 
 Contributors: Arjan de Haan (Vepnar)
-Last edited: 28/10/2019 (dd/mm/yyyy)
+Last edited: 3/12/2019 (dd/mm/yyyy)
 """
 
 import imaplib
@@ -53,8 +53,13 @@ class EmailBox:
             return True when the E-Mail is found and False if it is not.
         """
 
+        self.mail_box.recent()
         _, mail_ids = self.mail_box.search(None, f'(FROM {address})')
-
+        
         if mail_ids[0]:
+            for num in mail_ids[0].split():
+                self.mail_box.store(num, '+FLAGS', r'(\Deleted)')
+                print(num)
+            self.mail_box.expunge()
             return True
         return False
